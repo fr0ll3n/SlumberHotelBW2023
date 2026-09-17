@@ -5,14 +5,13 @@ Hypixel-style BedWars **Slumber Hotel** progression for Minecraft **1.8.8 / 1.8.
 ## Requires
 - Spigot/Paper 1.8.8–1.8.9
 - PlayerPoints
-- BedWars2023 (arena) / BWProxy or proxy-plugin (lobby)
+- BedWars2023 (arena) / BW2023Proxy (lobby)
 - Citizens (NPCs)
 - Optional: PlaceholderAPI, LuckPerms, Vault, DeluxeMenus, cosmetics plugin (Mher one), Citizens
 
 ## Install
-1. Put jar in `plugins/` on **lobby and arena**
-2. Create Citizens NPCs (see SETUP_NPCS_AND_MACHINE.txt)
-3. Set npcs id in saves.yml
+1. Put jar in `/plugins` on **lobby and arena**
+2. Create Citizens NPCs
 4. Configure MySQL optional: `storage.type: MYSQL`
 5. Restart `/slumber reload`
 
