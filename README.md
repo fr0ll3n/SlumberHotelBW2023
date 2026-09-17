@@ -9,9 +9,6 @@ Hypixel-style BedWars **Slumber Hotel** progression for Minecraft **1.8.8 / 1.8.
 - Citizens (NPCs)
 - Optional: PlaceholderAPI, LuckPerms, Vault, DeluxeMenus, cosmetics plugin
 
-## Does NOT need
-- BetonQuest (built-in quests)
-
 ## Install
 1. Put jar in `plugins/` on **lobby and arena**
 2. Create Citizens NPCs (see SETUP_NPCS_AND_MACHINE.txt)
