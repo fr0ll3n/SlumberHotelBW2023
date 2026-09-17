@@ -7,7 +7,7 @@ Hypixel-style BedWars **Slumber Hotel** progression for Minecraft **1.8.8 / 1.8.
 - PlayerPoints
 - BedWars2023 (arena) / BW2023Proxy (lobby)
 - Citizens (NPCs)
-- Optional: PlaceholderAPI, LuckPerms, Vault, DeluxeMenus, cosmetics plugin (Mher one), Citizens
+- Optional: PlaceholderAPI, LuckPerms, Vault, DeluxeMenus, cosmetics plugin (Mher's one)
 
 ## Install
 1. Put jar in `/plugins` on **lobby and arena**
