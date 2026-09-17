@@ -1,0 +1,25 @@
+name: SlumberHotelCore
+version: 3.9.0
+main: com.slumberhotel.core.SlumberHotelCore
+author: SlumberHotel Team
+description: Hypixel-style BedWars Slumber Hotel core (1.8.8 / BW2023 5.0)
+softdepend: [PlayerPoints, PlaceholderAPI, Vault, LuckPerms, Citizens, DeluxeMenus, BedWars2023, BedWars, BWProxy2023, BetonQuest]
+commands:
+  slumber:
+    description: Main Slumber Hotel command
+    usage: /slumber <tickets|wallet|daily|giveitem|reload|info>
+    aliases: [sh, hotel, slumberhotel]
+  slumberadmin:
+    description: Admin commands
+    usage: /slumberadmin
+    permission: slumber.admin
+permissions:
+  slumber.admin:
+    description: Full admin
+    default: op
+  slumber.tickets.see:
+    default: true
+  slumber.tickets.see.others:
+    default: op
+  slumber.wallet.upgrade:
+    default: true

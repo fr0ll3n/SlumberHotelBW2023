@@ -1,0 +1,2086 @@
+# ============================================================
+#  SpumberHotelCore v1.1 - Hypixel-style BedWars Slumber Hotel
+#  1.8.8 | BedWars2023 5.0.0 | PlayerPoints | BWProxy2023
+# ============================================================
+
+debug: false
+language: en
+
+# AUTO | LOBBY | ARENA
+server-type: AUTO
+
+tickets:
+  name: "Slumber Ticket"
+  name-plural: "Slumber Tickets"
+  gains:
+    kill: 1
+    final-kill: 5
+    bed-destroy: 10
+    win: 20
+    play-time-minutes: 5
+  global-multiplier: 1.0
+
+wallet:
+  starting-capacity: 25
+  tiers:
+    - 25
+    - 99
+    - 500
+    - 5000
+    - 10000
+    - 40000
+    - 100000
+  meta-key: "slumber.wallet.tier"
+
+
+# ============================================================
+#  COSTS (used by placeholders %slumber_needed_*% and menus)
+# ============================================================
+costs:
+  # Tickets required to enter the hotel (Doorman Dave)
+  hotel-entry: 25
+  # Tickets required to upgrade wallet to each tier (index = target tier)
+  # tier 0→1 costs first value, 1→2 second, etc.
+  wallet-upgrades:
+    - 0
+    - 50
+    - 100
+    - 250
+    - 500
+    - 1000
+    - 2500
+  # Door unlock costs (room keys)
+  doors:
+    room-1: 30
+    room-2: 50
+    room-3: 75
+    room-4: 100
+    room-5: 150
+    vip-suite: 300
+    penthouse: 500
+  # Quest turn-in display costs (informational)
+  quests:
+    bed-sheet: 0
+    comfy-pillow: 0
+    ender-dust: 0
+
+# ============================================================
+#  SPECIAL ITEMS
+# ============================================================
+special-items:
+  bed-sheet:
+    material: WOOL
+    data: 0
+    name: "&fBed Sheet"
+    lore:
+      - "&7Taken from an enemy bed."
+      - "&8Quest Item"
+    drop-chance-on-bed: 1.0
+  comfy-pillow:
+    material: WOOL
+    data: 0
+    name: "&fComfy Pillow"
+    lore:
+      - "&7Found near an enemy generator."
+      - "&8Quest Item"
+    # Chance when collecting from generators (PlayerGeneratorCollectEvent)
+    generator-collect-chance: 0.08
+  ender-dust:
+    material: SULPHUR
+    data: 0
+    name: "&5Ender Dust"
+    lore:
+      - "&7Residue from an ender pearl."
+      - "&8Quest Item"
+  treasure-map:
+    material: MAP
+    data: 0
+    name: "&6Old Treasure Map"
+    lore:
+      - "&7Found while breaking blocks."
+      - "&8Quest Item"
+    break-blocks:
+      - DIRT
+      - GRASS
+      - STONE
+      - GLASS
+      - SAND
+      - CLAY
+      - HARD_CLAY
+    chance: 0.02
+  iron-nugget:
+    material: IRON_INGOT
+    data: 0
+    name: "&7Iron Nugget"
+    lore:
+      - "&7A small piece of iron."
+      - "&8Quest Item"
+    generator-chance: 0.15
+  token-of-ferocity:
+    material: MAGMA_CREAM
+    data: 0
+    name: "&cToken of Ferocity"
+    lore:
+      - "&7Proof of combat prowess."
+      - "&8Quest Item"
+    kill-chance: 0.20
+    final-kill-chance: 0.35
+  ornate-hammer:
+    material: IRON_PICKAXE
+    data: 0
+    name: "&6Ornate Enchanted Iron Hammer"
+    lore:
+      - "&7Forged by the hotel Blacksmith."
+      - "&8Quest Item"
+  oasis-water:
+    material: WATER_BUCKET
+    data: 0
+    name: "&bOasis Water"
+    lore:
+      - "&7From the desert dream."
+      - "&8Quest Item"
+    win-chance: 0.25
+  proof-of-success:
+    material: PAPER
+    data: 0
+    name: "&aProof of Success"
+    lore:
+      - "&7Awarded for winning a game."
+      - "&8Quest Item"
+    win-chance: 1.0
+  wool-cable:
+    material: STRING
+    data: 0
+    name: "&fSpare Wool Cable"
+    lore:
+      - "&7From enemy wool."
+      - "&8Quest Item"
+    wool-break-chance: 0.30
+  diamond-fragment:
+    material: DIAMOND
+    data: 0
+    name: "&bDiamond Fragment"
+    lore:
+      - "&7Shattered diamond residue."
+      - "&8Quest Item"
+    diamond-collect-chance: 0.12
+  gold-bar:
+    material: GOLD_INGOT
+    data: 0
+    name: "&6Gold Bar"
+    lore:
+      - "&7Unspent gold from a finished game."
+      - "&8Quest Item"
+  void-husk:
+    material: SULPHUR
+    data: 0
+    name: "&8Void Husk"
+    lore:
+      - "&7Residue of a void death."
+      - "&8Quest Item"
+  spark-plug:
+    material: REDSTONE
+    data: 0
+    name: "&cSpark Plug"
+    lore:
+      - "&7Found near the hotel exterior."
+      - "&8Quest Item"
+  silver-coin:
+    material: GOLD_NUGGET
+    data: 0
+    name: "&eSilver Coin"
+    lore:
+      - "&7From shopping in-game."
+      - "&8Quest Item"
+    # Chance on shop buy (ShopBuyEvent)
+    shop-buy-chance: 0.12
+
+# ============================================================
+#  DAILY QUESTS (plugin-side, resets every day UTC)
+# ============================================================
+daily-quests:
+  enabled: true
+  reset-hour-utc: 0
+  # Players can have this many active daily quests
+  max-active: 3
+  # Quest pool – plugin picks random ones each day per player
+  pool:
+    daily_kills:
+      name: "&cSlayer"
+      description: "&7Get &e10 kills &7in Bed Wars"
+      type: KILLS
+      target: 10
+      reward-tickets: 15
+    daily_finals:
+      name: "&4Final Blow"
+      description: "&7Get &e3 final kills"
+      type: FINAL_KILLS
+      target: 3
+      reward-tickets: 20
+    daily_beds:
+      name: "&6Bed Raider"
+      description: "&7Destroy &e2 beds"
+      type: BEDS
+      target: 2
+      reward-tickets: 25
+    daily_wins:
+      name: "&aVictor"
+      description: "&7Win &e1 game"
+      type: WINS
+      target: 1
+      reward-tickets: 30
+    daily_games:
+      name: "&bWarm-up"
+      description: "&7Play &e3 games"
+      type: GAMES
+      target: 3
+      reward-tickets: 12
+
+# ============================================================
+#  STORAGE
+#  type: YAML | MYSQL
+#  MySQL uses HikariCP + connector SHADDED inside this plugin.
+#  Just create an empty database in your panel, then fill these in.
+# ============================================================
+storage:
+  # Change to MYSQL to use your database panel
+  type: YAML
+  mysql:
+    host: localhost
+    port: 3306
+    database: slumberhotel
+    username: root
+    password: "password"
+    table-prefix: sh_
+    pool-size: 10
+    min-idle: 2
+
+# ============================================================
+#  MESSAGES
+# ============================================================
+messages:
+  prefix: "&8[&dSlumber Hotel&8] &r"
+  tickets-gained: "&a+{amount} {name} &7({reason})"
+  wallet-full: "&cYour wallet is full! ({current}/{max}) Talk to the Receptionist."
+  wallet-upgraded: "&aWallet capacity increased to &e{max}&a!"
+  no-permission: "&cYou don't have permission."
+  player-not-found: "&cPlayer not found."
+  reloaded: "&aConfiguration reloaded."
+  tickets-balance: "&7You have &e{amount} &7{name}."
+  tickets-balance-other: "&e{player} &7has &e{amount} &7{name}."
+  daily-complete: "&aDaily quest complete: &e{name}&a! +{reward} tickets"
+  daily-progress: "&7[{name}] &e{current}&7/&e{target}"
+  daily-reset: "&7Your daily hotel quests have been refreshed."
+
+integrations:
+  playerpoints: true
+  placeholderapi: true
+  bedwars2023: true
+  bwproxy2023: true
+  luckperms: true
+  citizens: true
+  betonquest: true
+
+# ============================================================
+#  BUILT-IN QUESTS (no BetonQuest – works on 1.8.8/1.8.9)
+# ============================================================
+quests-settings:
+  talk-complete-on-start: false
+
+npcs:
+  # citizens-id: set after /npc create using /npc id
+  # names: alternate names that also match on right-click
+  doorman_dave:
+    citizens-id: 1
+    names: ["Doorman Dave", "Dave"]
+  receptionist:
+    citizens-id: 2
+    names: ["Hotel Receptionist", "Receptionist"]
+  lady_saichi:
+    require-quest: meet_receptionist
+    citizens-id: 3
+    names: ["Lady Saichi", "Saichi"]
+  general_daku:
+    require-quest: meet_receptionist
+    citizens-id: 4
+    names: ["General Daku", "Daku"]
+  john_indigos:
+    require-quest: meet_receptionist
+    citizens-id: 5
+    names: ["Explorer John Indigos", "John Indigos", "John"]
+  king_flut:
+    require-quest: meet_receptionist
+    citizens-id: 6
+    names: ["King Flut", "Flut"]
+  blacksmith:
+    citizens-id: 7
+    names: ["Blacksmith"]
+  arcade_player:
+    citizens-id: 8
+    names: ["Arcade Player"]
+  oasis_spirit:
+    require-quest: meet_receptionist
+    citizens-id: 9
+    names: ["Oasis Spirit", "Spirit"]
+  ticket_machine:
+    citizens-id: 10
+    names: ["Ticket Machine", "Slumber Ticket Machine"]
+  hostess_katrina:
+    require-quest: meet_receptionist
+    citizens-id: 11
+    names: ["Hostess Katrina", "Katrina"]
+  ceo:
+    citizens-id: 12
+    names: ["CEO", "The CEO"]
+  quiz_host:
+    citizens-id: 13
+    names: ["Quiz Show Host", "Quiz Host"]
+  skyblock_player:
+    citizens-id: 14
+    names: ["SkyBlock Player"]
+  ratman:
+    citizens-id: 15
+    names: ["The Ratman", "Ratman"]
+
+doors:
+  room-1:
+    name: "Throne Door (Room 1)"
+    cost: 100
+    permission: "slumber.door.room-1"
+    # Set in-game: /slumber settrigger room-1  and  /slumber settp room-1
+    # trigger:
+    #   world: world
+    #   x1: 0
+    #   y1: 64
+    #   z1: 0
+    #   x2: 2
+    #   y2: 66
+    #   z2: 2
+    # teleport:
+    #   world: world
+    #   x: 10.5
+    #   y: 65
+    #   z: 10.5
+    #   yaw: 0
+    #   pitch: 0
+  room-2:
+    name: "Hotel Door (Room 2)"
+    cost: 100
+    permission: "slumber.door.room-2"
+  room-3:
+    name: "Desert Door (Room 3)"
+    cost: 100
+    permission: "slumber.door.room-3"
+  room-4:
+    name: "Electronic Door (Room 4)"
+    cost: 100
+    permission: "slumber.door.room-4"
+  room-5:
+    name: "Door from the Sky (Room 5)"
+    cost: 100
+    permission: "slumber.door.room-5"
+  room-6:
+    name: "Door as seen on TV (Room 6)"
+    cost: 100
+    permission: "slumber.door.room-6"
+  room-7:
+    name: "Glass Door (Room 7)"
+    cost: 100
+    permission: "slumber.door.room-7"
+  room-8:
+    name: "Arcade Door (Room 8)"
+    cost: 100
+    permission: "slumber.door.room-8"
+  room-9:
+    name: "Skyscraper Door (Room 9)"
+    cost: 1000
+    permission: "slumber.door.room-9"
+  room-10:
+    name: "Intricate Door (Room 10)"
+    cost: 1000
+    permission: "slumber.door.room-10"
+  room-11:
+    name: "Limbo Door (Room 11)"
+    cost: 2500
+    permission: "slumber.door.room-11"
+  room-12:
+    name: "Garage Door (Room 12)"
+    cost: 2500
+    permission: "slumber.door.room-12"
+  room-13:
+    name: "Lobby Door (Room 13)"
+    cost: 5000
+    permission: "slumber.door.room-13"
+  room-14:
+    name: "Tickets at the Door (Room 14)"
+    cost: 5000
+    permission: "slumber.door.room-14"
+  room-15:
+    name: "Door for Hire (Room 15)"
+    cost: 5000
+    permission: "slumber.door.room-15"
+  room-16:
+    name: "Space Door (Room 16)"
+    cost: 1000
+    permission: "slumber.door.room-16"
+  owners-office:
+    name: "Owner's Office"
+    cost: 40000
+    permission: "slumber.door.owners"
+
+quests:
+  enter_hotel:
+    name: "&dEnter the Slumber Hotel"
+    description: "&7Pay Doorman Dave 25 Slumber Tickets to enter."
+    npc: doorman_dave
+    requires-games: 5
+    objective:
+      type: PAY_TICKETS
+      tickets: 25
+    rewards:
+      tickets: 0
+      commands: []
+    dialogue:
+      start:
+        - "&7[Doorman Dave] &fThe Slumber Hotel houses Bed Wars' most distinguished guests."
+        - "&7[Doorman Dave] &fTo enter, you need to give me &e25 Slumber Tickets&f."
+        - "&7[Doorman Dave] &fHere is a &aMini Wallet&f – earn tickets by playing Bed Wars!"
+      progress:
+        - "&7[Doorman Dave] &cYou need more Slumber Tickets. Keep playing!"
+      complete:
+        - "&7[Doorman Dave] &aThank you for the 25 Slumber Tickets!"
+        - "&7[Doorman Dave] &aYou can now enter the Slumber Hotel whenever you like!"
+
+  meet_receptionist:
+    name: "&fIntroduce Yourself to the Receptionist"
+    description: "&7Speak with the Hotel Receptionist."
+    npc: receptionist
+    requires-entered: true
+    requires-quests: [enter_hotel]
+    objective:
+      type: TALK
+    rewards:
+      tickets: 5
+    dialogue:
+      start:
+        - "&7[Receptionist] &fWelcome to the Slumber Hotel!"
+        - "&7[Receptionist] &fHelp our guests and return to me to expand your wallet."
+      complete:
+        - "&7[Receptionist] &aPleasure to meet you. Check &e/slumber quests &afor your log."
+
+  lady_saichi_sheet:
+    name: "&fObtain a Bed Sheet"
+    description: "&7Bring Lady Saichi a Bed Sheet (destroy an enemy bed)."
+    npc: lady_saichi
+    requires-entered: true
+    requires-quests: [meet_receptionist]
+    objective:
+      type: COLLECT_ITEM
+      item: bed-sheet
+      amount: 1
+    rewards:
+      tickets: 20
+      stars: 1
+    dialogue:
+      start:
+        - "&7[Lady Saichi] &fOh, a visitor! My bed sheet is ruined..."
+        - "&7[Lady Saichi] &fCould you bring me a &fBed Sheet &7from an enemy bed?"
+      progress:
+        - "&7[Lady Saichi] &fStill waiting for that Bed Sheet..."
+      complete:
+        - "&7[Lady Saichi] &aPerfect! Thank you so much."
+
+  general_daku_tea:
+    name: "&fThe General's Tea"
+    description: "&7Collect 5 Ender Dust for General Daku (throw ender pearls)."
+    npc: general_daku
+    requires-entered: true
+    requires-quests: [meet_receptionist]
+    objective:
+      type: COLLECT_ITEM
+      item: ender-dust
+      amount: 200
+    rewards:
+      tickets: 30
+      stars: 1
+    dialogue:
+      start:
+        - "&7[General Daku] &fSoldier! I require &5Ender Dust&f for my tea."
+        - "&7[General Daku] &fThrow ender pearls in battle and collect the residue. &e5&f will do."
+      progress:
+        - "&7[General Daku] &fBring me more Ender Dust, soldier."
+      complete:
+        - "&7[General Daku] &aExcellent work. Dismissed."
+
+  john_treasure_map:
+    name: "&fHelp John Indigos"
+    description: "&7Find an Old Treasure Map (break dirt/grass/stone/glass/sand/clay)."
+    npc: john_indigos
+    requires-entered: true
+    requires-quests: [meet_receptionist]
+    objective:
+      type: COLLECT_ITEM
+      item: treasure-map
+      amount: 1
+    rewards:
+      tickets: 25
+      stars: 1
+    dialogue:
+      start:
+        - "&7[John Indigos] &fExplorer John Indigos at your service!"
+        - "&7[John Indigos] &fI need an &6Old Treasure Map&f. Break dirt, grass, stone, glass..."
+      progress:
+        - "&7[John Indigos] &fAny luck with that map?"
+      complete:
+        - "&7[John Indigos] &aSplendid! The expedition can begin!"
+
+  ready_for_nap:
+    name: "&aReady for a Nap"
+    description: "&7Return to the Receptionist after helping the first three guests."
+    npc: receptionist
+    requires-entered: true
+    requires-quests: [lady_saichi_sheet, general_daku_tea, john_treasure_map]
+    objective:
+      type: TALK
+    rewards:
+      upgrade-wallet: true
+      tickets: 10
+      stars: 2
+    dialogue:
+      start:
+        - "&7[Receptionist] &fYou've been a great help to our guests!"
+        - "&7[Receptionist] &fLet me upgrade your wallet..."
+      complete:
+        - "&7[Receptionist] &aYour wallet can now hold more Slumber Tickets!"
+        - "&7[Receptionist] &fTry unlocking hotel doors with &e/slumber door"
+  # --- Phase 2: after wallet upgrade (ready_for_nap) ---
+  throne_intro:
+    name: "&6Throne Room – Meet King Flut"
+    description: "&7Unlock Door room-1 (100 tickets), then speak to King Flut."
+    npc: king_flut
+    requires-entered: true
+    requires-quests: [ready_for_nap]
+    objective:
+      type: TALK
+    rewards:
+      tickets: 15
+      stars: 1
+    dialogue:
+      start:
+        - "&7[King Flut] &fA visitor in my dream? Prove your worth."
+        - "&7[King Flut] &fReturn when you have &e10 Tokens of Ferocity&f (kills/assists in games)."
+      complete:
+        - "&7[King Flut] &aVery well. We shall speak again."
+
+  # Placeholder collect quest for ferocity tokens – uses kill tracking later
+  # For now: pay tickets as proxy until Token item is added
+  king_ferocity:
+    name: "&6Tokens of Ferocity"
+    description: "&7Collect &e10 Tokens of Ferocity&7 (chance on kills/final kills)."
+    npc: king_flut
+    requires-quests: [throne_intro]
+    objective:
+      type: COLLECT_ITEM
+      item: token-of-ferocity
+      amount: 10
+    rewards:
+      tickets: 40
+      stars: 2
+    dialogue:
+      start:
+        - "&7[King Flut] &fA visitor in my dream must prove their might."
+        - "&7[King Flut] &fBring me &e10 Tokens of Ferocity&f – earned from kills in Bed Wars."
+      progress:
+        - "&7[King Flut] &cYou lack enough Tokens of Ferocity. Fight harder!"
+      complete:
+        - "&7[King Flut] &aYour strength is acknowledged. The throne remembers you."
+
+  blacksmith_intro:
+    name: "&7The Blacksmith"
+    description: "&7Find the Blacksmith after your first wallet upgrade."
+    npc: blacksmith
+    requires-quests: [ready_for_nap]
+    objective:
+      type: TALK
+    rewards:
+      tickets: 5
+      stars: 1
+    dialogue:
+      start:
+        - "&7[Blacksmith] &fI forge what the hotel needs."
+        - "&7[Blacksmith] &fIf John sends you, bring &e25 Iron Nuggets&f."
+      complete:
+        - "&7[Blacksmith] &aI'll be here."
+
+  john_hammer_request:
+    name: "&eJohn Needs a Hammer"
+    description: "&7Talk to John Indigos about a new hammer."
+    npc: john_indigos
+    requires-quests: [blacksmith_intro, john_treasure_map]
+    objective:
+      type: TALK
+    rewards:
+      tickets: 10
+      stars: 1
+    dialogue:
+      start:
+        - "&7[John Indigos] &fMy old hammer broke on the last dig!"
+        - "&7[John Indigos] &fAsk the Blacksmith to forge an &6Ornate Enchanted Iron Hammer&f."
+        - "&7[John Indigos] &fHe'll want Iron Nuggets – pick up iron from generators."
+      complete:
+        - "&7[John Indigos] &aOff you go – materials to the Blacksmith!"
+
+  blacksmith_forge:
+    name: "&7Forge the Hammer"
+    description: "&7Deliver &e25 Iron Nuggets&7 to the Blacksmith."
+    npc: blacksmith
+    requires-quests: [john_hammer_request]
+    objective:
+      type: COLLECT_ITEM
+      item: iron-nugget
+      amount: 25
+    rewards:
+      tickets: 20
+      stars: 1
+      commands:
+        - "slumber giveitem %player% ornate-hammer 1"
+    dialogue:
+      start:
+        - "&7[Blacksmith] &f25 Iron Nuggets and I'll forge John's hammer."
+      progress:
+        - "&7[Blacksmith] &cNot enough nuggets yet."
+      complete:
+        - "&7[Blacksmith] &a*clang* It's done. Take this &6Ornate Hammer&a to John."
+
+  john_hammer_deliver:
+    name: "&eDeliver the Hammer"
+    description: "&7Give the Ornate Hammer to John Indigos."
+    npc: john_indigos
+    requires-quests: [blacksmith_forge]
+    objective:
+      type: COLLECT_ITEM
+      item: ornate-hammer
+      amount: 1
+    rewards:
+      tickets: 50
+      stars: 3
+      upgrade-wallet: true
+    dialogue:
+      start:
+        - "&7[John Indigos] &fIs that my new hammer? Hand it over!"
+      progress:
+        - "&7[John Indigos] &cI still need that Ornate Hammer from the Blacksmith."
+      complete:
+        - "&7[John Indigos] &aBrilliant! Tell the Receptionist – you've earned a bigger wallet!"
+        - "&7[John Indigos] &aThe next floor of the hotel awaits..."
+
+
+  oasis_intro:
+    name: "&bDesert Door – Oasis Spirit"
+    description: "&7Unlock door room-3, then speak to the Oasis Spirit."
+    npc: oasis_spirit
+    requires-quests: [ready_for_nap]
+    objective:
+      type: TALK
+    rewards:
+      tickets: 15
+      stars: 1
+    dialogue:
+      start:
+        - "&7[Oasis Spirit] &fTraveler... the desert dream thirsts."
+        - "&7[Oasis Spirit] &fBring me &e3 Oasis Water&f – found while winning games with water buckets... or as a rare drop."
+      complete:
+        - "&7[Oasis Spirit] &aThe sands acknowledge you."
+
+  oasis_water_quest:
+    name: "&bOffering of Water"
+    description: "&7Deliver &e3 Oasis Water&7 to the Oasis Spirit."
+    npc: oasis_spirit
+    requires-quests: [oasis_intro]
+    objective:
+      type: COLLECT_ITEM
+      item: oasis-water
+      amount: 3
+    rewards:
+      tickets: 60
+      stars: 2
+      boon: 0.10
+    dialogue:
+      start:
+        - "&7[Oasis Spirit] &fThree vessels of Oasis Water. That is the price."
+      progress:
+        - "&7[Oasis Spirit] &cThe offering is incomplete."
+      complete:
+        - "&7[Oasis Spirit] &aThe oasis blooms. A boon of tickets is yours."
+
+  arcade_intro:
+    name: "&bArcade Player"
+    description: "&7Unlock room-8, meet the Arcade Player (repeatable ticket sink later)."
+    npc: arcade_player
+    requires-quests: [ready_for_nap]
+    objective:
+      type: TALK
+    rewards:
+      tickets: 5
+    dialogue:
+      start:
+        - "&7[Arcade Player] &fBeep boop. Bring iron nuggets and I'll trade tickets."
+      complete:
+        - "&7[Arcade Player] &aCome back with nuggets anytime."
+
+  arcade_nuggets:
+    name: "&bIron Nugget Trade"
+    description: "&7Turn in 10 Iron Nuggets for tickets (repeatable)."
+    npc: arcade_player
+    requires-quests: [arcade_intro]
+    repeatable: true
+    objective:
+      type: COLLECT_ITEM
+      item: iron-nugget
+      amount: 10
+    rewards:
+      tickets: 50
+    dialogue:
+      start:
+        - "&7[Arcade Player] &f10 Iron Nuggets = 50 tickets. Deal?"
+      progress:
+        - "&7[Arcade Player] &cNot enough nuggets."
+      complete:
+        - "&7[Arcade Player] &aTrade complete! Come back anytime."
+
+
+
+  ceo_intro:
+    name: "&7Glass Door – Meet the CEO"
+    description: "&7Unlock room-7, speak with the CEO."
+    npc: ceo
+    requires-quests: [ready_for_nap]
+    objective:
+      type: TALK
+    rewards:
+      tickets: 15
+      stars: 1
+    dialogue:
+      start:
+        - "&7[CEO] &fSuccess is measured in victories."
+        - "&7[CEO] &fBring me &eProof of Success&f – win Bed Wars games."
+      complete:
+        - "&7[CEO] &aWe will talk business when you have proof."
+
+  ceo_wins:
+    name: "&7Proof of Success"
+    description: "&7Deliver &e10 Proof of Success&7 (earned by winning games)."
+    npc: ceo
+    requires-quests: [ceo_intro]
+    objective:
+      type: COLLECT_ITEM
+      item: proof-of-success
+      amount: 10
+    rewards:
+      tickets: 50
+      stars: 2
+    dialogue:
+      start:
+        - "&7[CEO] &fBring me &e10 Proof of Success&f – one per victory."
+      progress:
+        - "&7[CEO] &cInsufficient proof. Win more games."
+      complete:
+        - "&7[CEO] &aImpressive. The board takes note."
+
+  quiz_intro:
+    name: "&eQuiz Show"
+    description: "&7Unlock room-6 and meet the Quiz Show Host."
+    npc: quiz_host
+    requires-quests: [ready_for_nap]
+    objective:
+      type: TALK
+    rewards:
+      tickets: 10
+      stars: 1
+    dialogue:
+      start:
+        - "&7[Quiz Host] &fWelcome to the show! No wrong answers... yet."
+        - "&7[Quiz Host] &fCome back when you're ready for a ticket challenge."
+      complete:
+        - "&7[Quiz Host] &aDon't touch that dial!"
+
+  quiz_challenge:
+    name: "&eTicket Challenge"
+    description: "&7Wager &e50 tickets&7 on the quiz (pay to complete for now)."
+    npc: quiz_host
+    requires-quests: [quiz_intro]
+    objective:
+      type: PAY_TICKETS
+      tickets: 50
+    rewards:
+      tickets: 80
+      stars: 1
+    dialogue:
+      start:
+        - "&7[Quiz Host] &fEntry fee: &e50 tickets&f. Win big!"
+      progress:
+        - "&7[Quiz Host] &cCan't afford the entry fee?"
+      complete:
+        - "&7[Quiz Host] &aCorrect! Here's your prize pot!"
+
+  skyblock_intro:
+    name: "&bSky Door"
+    description: "&7Unlock room-5, meet the SkyBlock Player."
+    npc: skyblock_player
+    requires-quests: [ready_for_nap]
+    objective:
+      type: TALK
+    rewards:
+      tickets: 10
+    dialogue:
+      start:
+        - "&7[SkyBlock Player] &fI miss my island... Bring me &e5 Silver Coins&f from shopping."
+      complete:
+        - "&7[SkyBlock Player] &aSee you with those coins."
+
+  skyblock_coins:
+    name: "&bIsland Savings"
+    description: "&7Deliver &e5 Silver Coins&7 (from shop buys in-game)."
+    npc: skyblock_player
+    requires-quests: [skyblock_intro]
+    objective:
+      type: COLLECT_ITEM
+      item: silver-coin
+      amount: 5
+    rewards:
+      tickets: 45
+      stars: 1
+    dialogue:
+      start:
+        - "&7[SkyBlock Player] &f5 Silver Coins and I'll share a secret."
+      progress:
+        - "&7[SkyBlock Player] &cStill need more coins."
+      complete:
+        - "&7[SkyBlock Player] &aThanks! Don't forget to open more doors."
+
+  ratman_intro:
+    name: "&8The Ratman"
+    description: "&7Unlock room-9 (1000 tickets), meet The Ratman."
+    npc: ratman
+    requires-quests: [john_hammer_deliver]
+    objective:
+      type: TALK
+    rewards:
+      tickets: 20
+      stars: 1
+    dialogue:
+      start:
+        - "&7[Ratman] &fSqueak... You found the skyscraper dream."
+        - "&7[Ratman] &fMasks and secrets later. For now, welcome."
+      complete:
+        - "&7[Ratman] &aStay sneaky."
+
+  jimmy_bimmy:
+    name: "&eJimmy and Bimmy"
+    description: "&7After more progress – tribute of tickets + wool cables."
+    npc: receptionist
+    requires-quests: [john_hammer_deliver, king_ferocity]
+    objective:
+      type: PAY_TICKETS
+      tickets: 500
+    rewards:
+      tickets: 100
+      stars: 3
+    dialogue:
+      start:
+        - "&7[Receptionist] &fJimmy asked for a &e500 ticket&f tribute on their behalf."
+      progress:
+        - "&7[Receptionist] &cNot enough tickets."
+      complete:
+        - "&7[Receptionist] &aI'll pass that along to Jimmy and Bimmy!"
+
+  wool_cables_quest:
+    name: "&fSpare Wool Cables"
+    description: "&7Collect &e20 Spare Wool Cables&7 (break wool in games)."
+    npc: receptionist
+    requires-quests: [jimmy_bimmy]
+    objective:
+      type: COLLECT_ITEM
+      item: wool-cable
+      amount: 20
+    rewards:
+      tickets: 75
+      stars: 2
+    dialogue:
+      start:
+        - "&7[Receptionist] &fThey also wanted &e20 Spare Wool Cables&f from enemy wool."
+      progress:
+        - "&7[Receptionist] &cStill need more cables."
+      complete:
+        - "&7[Receptionist] &aPerfect – delivery complete."
+
+  receptionist_staff_wallet:
+    name: "&6Hotel Staff Wallet"
+    description: "&7Return to Receptionist after major quests for a huge wallet upgrade."
+    npc: receptionist
+    requires-quests: [wool_cables_quest, ceo_wins, oasis_water_quest, john_hammer_deliver]
+    objective:
+      type: TALK
+    rewards:
+      tickets: 50
+      stars: 5
+      wallet-tier: 3
+    dialogue:
+      start:
+        - "&7[Receptionist] &fYou've done so much for the hotel..."
+      complete:
+        - "&7[Receptionist] &aYour wallet is now worthy of the upper floors!"
+
+
+  hermes_intro:
+    name: "&9Electronic Door – Hermes"
+    description: "&7Unlock room-4, meet Hermes."
+    npc: hermes
+    requires-quests: [ready_for_nap]
+    objective:
+      type: TALK
+    rewards:
+      tickets: 10
+      stars: 1
+    dialogue:
+      start:
+        - "&7[Hermes] &fMessages travel faster than diamonds."
+        - "&7[Hermes] &fBring me &e5 Diamond Fragments&f from collecting diamonds."
+      complete:
+        - "&7[Hermes] &aI'll be waiting."
+
+  hermes_fragments:
+    name: "&9Diamond Fragments"
+    description: "&7Deliver &e5 Diamond Fragments&7 to Hermes."
+    npc: hermes
+    requires-quests: [hermes_intro]
+    objective:
+      type: COLLECT_ITEM
+      item: diamond-fragment
+      amount: 5
+    rewards:
+      tickets: 55
+      stars: 2
+    dialogue:
+      start:
+        - "&7[Hermes] &fFive fragments. Don't keep the gods waiting."
+      progress:
+        - "&7[Hermes] &cMore fragments required."
+      complete:
+        - "&7[Hermes] &aSwift work. Delivery confirmed."
+
+  master_meyer:
+    name: "&cToken Tribute"
+    description: "&7Repeatable: turn in &e15 Tokens of Ferocity&7 for tickets."
+    npc: king_flut
+    requires-quests: [king_ferocity]
+    repeatable: true
+    objective:
+      type: COLLECT_ITEM
+      item: token-of-ferocity
+      amount: 15
+    rewards:
+      tickets: 40
+    dialogue:
+      start:
+        - "&7[King Flut] &fAnother tribute of &e15 Tokens&f keeps the throne pleased."
+      progress:
+        - "&7[King Flut] &cNot enough tokens."
+      complete:
+        - "&7[King Flut] &aAccepted. Return anytime."
+
+  silver_sink:
+    name: "&eCoin Exchange"
+    description: "&7Repeatable: 10 Silver Coins for tickets."
+    npc: arcade_player
+    requires-quests: [arcade_intro]
+    repeatable: true
+    objective:
+      type: COLLECT_ITEM
+      item: silver-coin
+      amount: 10
+    rewards:
+      tickets: 35
+    dialogue:
+      start:
+        - "&7[Arcade Player] &f10 Silver Coins = 35 tickets."
+      progress:
+        - "&7[Arcade Player] &cNeed more coins."
+      complete:
+        - "&7[Arcade Player] &aTrade complete!"
+
+  daily_guest_stars:
+    name: "&6Star Collector"
+    description: "&7Talk to the Receptionist after earning stars from guests."
+    npc: receptionist
+    requires-quests: [ready_for_nap]
+    requires-stars: 5
+    objective:
+      type: TALK
+    rewards:
+      tickets: 30
+      stars: 1
+    dialogue:
+      start:
+        - "&7[Receptionist] &fI see you've been collecting Hotel Stars..."
+      complete:
+        - "&7[Receptionist] &aA bonus for dedicated guests!"
+
+
+  combat_sally:
+    name: "&cCombat Artist Sally"
+    description: "&7Repeatable combat tribute after Ratman intro."
+    npc: ratman
+    requires-quests: [ratman_intro]
+    repeatable: true
+    objective:
+      type: COLLECT_ITEM
+      item: token-of-ferocity
+      amount: 25
+    rewards:
+      tickets: 60
+      stars: 1
+    dialogue:
+      start:
+        - "&7[Ratman] &fSally says: &e25 Tokens of Ferocity&f for a payout."
+      progress:
+        - "&7[Ratman] &cNot enough tokens."
+      complete:
+        - "&7[Ratman] &aSqueak! Here's your cut."
+
+  pillow_collector:
+    name: "&fPillow Hoarder"
+    description: "&7Bring &e5 Comfy Pillows&7 to the Receptionist."
+    npc: receptionist
+    requires-quests: [ready_for_nap]
+    objective:
+      type: COLLECT_ITEM
+      item: comfy-pillow
+      amount: 5
+    rewards:
+      tickets: 40
+      stars: 1
+    dialogue:
+      start:
+        - "&7[Receptionist] &fGuests keep losing pillows... bring me &e5 Comfy Pillows&f."
+      progress:
+        - "&7[Receptionist] &cStill short on pillows."
+      complete:
+        - "&7[Receptionist] &aThe rooms thank you!"
+
+  ender_stockpile:
+    name: "&5Ender Stockpile"
+    description: "&7Deliver &e20 Ender Dust&7 to General Daku (repeatable)."
+    npc: general_daku
+    requires-quests: [general_daku_tea]
+    repeatable: true
+    objective:
+      type: COLLECT_ITEM
+      item: ender-dust
+      amount: 20
+    rewards:
+      tickets: 45
+    dialogue:
+      start:
+        - "&7[General Daku] &fThe tea reserves run low. &e20 Ender Dust&f."
+      progress:
+        - "&7[General Daku] &cMore dust, soldier."
+      complete:
+        - "&7[General Daku] &aAdequate. Dismissed."
+
+  map_explorer:
+    name: "&6Cartographer"
+    description: "&7Find &e3 Old Treasure Maps&7 for John (repeatable)."
+    npc: john_indigos
+    requires-quests: [john_treasure_map]
+    repeatable: true
+    objective:
+      type: COLLECT_ITEM
+      item: treasure-map
+      amount: 3
+    rewards:
+      tickets: 50
+    dialogue:
+      start:
+        - "&7[John Indigos] &fThe expedition needs &e3 more maps&f!"
+      progress:
+        - "&7[John Indigos] &cKeep digging."
+      complete:
+        - "&7[John Indigos] &aCharted! Here's a finder's fee."
+
+  bed_sheet_laundry:
+    name: "&fLaundry Duty"
+    description: "&7Repeatable: &e3 Bed Sheets&7 for Lady Saichi."
+    npc: lady_saichi
+    requires-quests: [lady_saichi_sheet]
+    repeatable: true
+    objective:
+      type: COLLECT_ITEM
+      item: bed-sheet
+      amount: 3
+    rewards:
+      tickets: 35
+    dialogue:
+      start:
+        - "&7[Lady Saichi] &fThe laundry never ends... &e3 Bed Sheets&f please."
+      progress:
+        - "&7[Lady Saichi] &cStill waiting on sheets."
+      complete:
+        - "&7[Lady Saichi] &aWonderful, dear."
+
+
+  door_tour:
+    name: "&eDoor Tour"
+    description: "&7Unlock any 3 hotel doors (costs tickets)."
+    npc: receptionist
+    requires-quests: [ready_for_nap]
+    objective:
+      type: PAY_TICKETS
+      tickets: 300
+    rewards:
+      tickets: 80
+      stars: 2
+    dialogue:
+      start:
+        - "&7[Receptionist] &fExplore the hotel! A &e300 ticket&f tour package unlocks your next steps."
+      progress:
+        - "&7[Receptionist] &cYou need 300 tickets for the tour package."
+      complete:
+        - "&7[Receptionist] &aEnjoy the rooms – and talk to everyone you meet!"
+
+  owners_prep:
+    name: "&5Office Key Deposit"
+    description: "&7Save toward the Owner's Office – pay &e5000 tickets&7 as a deposit."
+    npc: receptionist
+    requires-quests: [receptionist_staff_wallet]
+    objective:
+      type: PAY_TICKETS
+      tickets: 5000
+    rewards:
+      tickets: 500
+      stars: 5
+    dialogue:
+      start:
+        - "&7[Receptionist] &fThe Owner's Office costs &e40,000 tickets&f to open."
+        - "&7[Receptionist] &fA &e5,000 ticket&f deposit shows you're serious."
+      progress:
+        - "&7[Receptionist] &cDeposit not ready yet."
+      complete:
+        - "&7[Receptionist] &aDeposit recorded. Keep saving for the full unlock!"
+
+  star_milestone_10:
+    name: "&6Ten Stars"
+    description: "&7Reach &e10 Hotel Stars&7 then talk to Receptionist."
+    npc: receptionist
+    requires-quests: [ready_for_nap]
+    requires-stars: 10
+    objective:
+      type: TALK
+    rewards:
+      tickets: 100
+      stars: 2
+      boon: 0.05
+    dialogue:
+      start:
+        - "&7[Receptionist] &fTen Hotel Stars! Remarkable."
+      complete:
+        - "&7[Receptionist] &aHere's a small permanent ticket boost."
+
+  star_milestone_25:
+    name: "&6Twenty-Five Stars"
+    description: "&7Reach &e25 Hotel Stars&7."
+    npc: receptionist
+    requires-quests: [star_milestone_10]
+    requires-stars: 25
+    objective:
+      type: TALK
+    rewards:
+      tickets: 250
+      stars: 3
+      boon: 0.05
+    dialogue:
+      start:
+        - "&7[Receptionist] &fTwenty-five stars... the hotel is proud."
+      complete:
+        - "&7[Receptionist] &aAnother boon for our star guest."
+
+  machine_regular:
+    name: "&dMachine Regular"
+    description: "&7Spend tickets on the Ticket Machine (pay 100 as proof of use)."
+    npc: ticket_machine
+    requires-quests: [ready_for_nap]
+    objective:
+      type: PAY_TICKETS
+      tickets: 100
+    rewards:
+      tickets: 20
+      stars: 1
+    dialogue:
+      start:
+        - "&7[Ticket Machine] &f*whirr* Feed me &e100 tickets&f to prove you're a regular."
+      progress:
+        - "&7[Ticket Machine] &cInsufficient."
+      complete:
+        - "&7[Ticket Machine] &a*ding* Loyalty noted."
+
+  final_kill_challenge:
+    name: "&cFinals Hunter"
+    description: "&7Bring &e20 Tokens of Ferocity&7 to King Flut (from final kills)."
+    npc: king_flut
+    requires-quests: [king_ferocity]
+    objective:
+      type: COLLECT_ITEM
+      item: token-of-ferocity
+      amount: 20
+    rewards:
+      tickets: 70
+      stars: 2
+    dialogue:
+      start:
+        - "&7[King Flut] &fProve greater ferocity: &e20 Tokens&f."
+      progress:
+        - "&7[King Flut] &cNot yet."
+      complete:
+        - "&7[King Flut] &aA true warrior of the dream."
+
+  iron_stock:
+    name: "&7Iron Stock"
+    description: "&7Deliver &e50 Iron Nuggets&7 to the Blacksmith (repeatable)."
+    npc: blacksmith
+    requires-quests: [blacksmith_intro]
+    repeatable: true
+    objective:
+      type: COLLECT_ITEM
+      item: iron-nugget
+      amount: 50
+    rewards:
+      tickets: 55
+    dialogue:
+      start:
+        - "&7[Blacksmith] &fThe forge needs &e50 Iron Nuggets&f."
+      progress:
+        - "&7[Blacksmith] &cMore iron."
+      complete:
+        - "&7[Blacksmith] &a*clang* Good stock."
+
+  victory_lap:
+    name: "&aVictory Lap"
+    description: "&7Deliver &e15 Proof of Success&7 to the CEO."
+    npc: ceo
+    requires-quests: [ceo_wins]
+    objective:
+      type: COLLECT_ITEM
+      item: proof-of-success
+      amount: 15
+    rewards:
+      tickets: 90
+      stars: 2
+    dialogue:
+      start:
+        - "&7[CEO] &fFifteen wins on paper. &e15 Proof of Success&f."
+      progress:
+        - "&7[CEO] &cWin more."
+      complete:
+        - "&7[CEO] &aExecutive material."
+
+  oasis_boon_repeat:
+    name: "&bOasis Blessing"
+    description: "&7Another offering of &e5 Oasis Water&7 (repeatable)."
+    npc: oasis_spirit
+    requires-quests: [oasis_water_quest]
+    repeatable: true
+    objective:
+      type: COLLECT_ITEM
+      item: oasis-water
+      amount: 5
+    rewards:
+      tickets: 40
+    dialogue:
+      start:
+        - "&7[Oasis Spirit] &fThe desert still thirsts... &e5 Oasis Water&f."
+      progress:
+        - "&7[Oasis Spirit] &cIncomplete."
+      complete:
+        - "&7[Oasis Spirit] &aThe sands are quieted again."
+
+  meet_sandman:
+    name: "&5Meet the Sandman"
+    description: "&7Unlock the Owner's Office (40000 tickets) and meet the owner."
+    npc: sandman
+    requires-quests: [receptionist_staff_wallet]
+    objective:
+      type: TALK
+    rewards:
+      tickets: 200
+      stars: 10
+    dialogue:
+      start:
+        - "&7[Sandman] &fSo you found your way to the Owner's Office."
+        - "&7[Sandman] &fThe dream ends where it begins – thank you for staying."
+      complete:
+        - "&7[Sandman] &aThe hotel will remember your name."
+
+  guest_of_honor:
+    name: "&6Guest of Honor"
+    description: "&7Complete the hammer chain and ferocity, then talk to Receptionist."
+    npc: receptionist
+    requires-quests: [john_hammer_deliver, king_ferocity]
+    objective:
+      type: TALK
+    rewards:
+      tickets: 75
+      stars: 3
+    dialogue:
+      start:
+        - "&7[Receptionist] &fYou've helped so many guests..."
+      complete:
+        - "&7[Receptionist] &aConsider yourself a Guest of Honor!"
+
+  room_master:
+    name: "&eRoom Master"
+    description: "&7Pay &e1000 tickets&7 after unlocking several doors."
+    npc: receptionist
+    requires-quests: [door_tour, guest_of_honor]
+    objective:
+      type: PAY_TICKETS
+      tickets: 1000
+    rewards:
+      tickets: 150
+      stars: 3
+    dialogue:
+      start:
+        - "&7[Receptionist] &fA &e1,000 ticket&f room-master fee for serious explorers."
+      progress:
+        - "&7[Receptionist] &cNot enough tickets."
+      complete:
+        - "&7[Receptionist] &aThe upper halls welcome you."
+
+  diamond_courier:
+    name: "&bDiamond Courier"
+    description: "&7Deliver &e15 Diamond Fragments&7 to Hermes (repeatable)."
+    npc: hermes
+    requires-quests: [hermes_fragments]
+    repeatable: true
+    objective:
+      type: COLLECT_ITEM
+      item: diamond-fragment
+      amount: 15
+    rewards:
+      tickets: 70
+    dialogue:
+      start:
+        - "&7[Hermes] &fMore packages: &e15 Diamond Fragments&f."
+      progress:
+        - "&7[Hermes] &cIncomplete shipment."
+      complete:
+        - "&7[Hermes] &aDelivered."
+
+  quiz_champion:
+    name: "&eQuiz Champion"
+    description: "&7Second quiz wager of &e100 tickets&7."
+    npc: quiz_host
+    requires-quests: [quiz_challenge]
+    objective:
+      type: PAY_TICKETS
+      tickets: 100
+    rewards:
+      tickets: 160
+      stars: 2
+    dialogue:
+      start:
+        - "&7[Quiz Host] &fChampionship round! Entry &e100 tickets&f."
+      progress:
+        - "&7[Quiz Host] &cCan't afford the big stage?"
+      complete:
+        - "&7[Quiz Host] &aChampion! Take your prize!"
+
+  sky_savings:
+    name: "&bIsland Fund"
+    description: "&7Deliver &e15 Silver Coins&7 to the SkyBlock Player."
+    npc: skyblock_player
+    requires-quests: [skyblock_coins]
+    objective:
+      type: COLLECT_ITEM
+      item: silver-coin
+      amount: 15
+    rewards:
+      tickets: 80
+      stars: 2
+    dialogue:
+      start:
+        - "&7[SkyBlock Player] &fI need &e15 Silver Coins&f for island upgrades."
+      progress:
+        - "&7[SkyBlock Player] &cStill saving..."
+      complete:
+        - "&7[SkyBlock Player] &aMy island thanks you!"
+
+  thrifty_explorer:
+    name: "&aThrifty Explorer"
+    description: "&7Hold a big wallet: talk after wallet tier 2+."
+    npc: john_indigos
+    requires-quests: [john_hammer_deliver]
+    objective:
+      type: TALK
+    rewards:
+      tickets: 40
+      stars: 1
+    dialogue:
+      start:
+        - "&7[John Indigos] &fNice wallet capacity. Keep exploring!"
+      complete:
+        - "&7[John Indigos] &aHere's a tip for the road."
+
+  saichi_thanks:
+    name: "&fSaichi's Thanks"
+    description: "&7Return to Lady Saichi after laundry duty."
+    npc: lady_saichi
+    requires-quests: [bed_sheet_laundry]
+    objective:
+      type: TALK
+    rewards:
+      tickets: 25
+      stars: 1
+    dialogue:
+      start:
+        - "&7[Lady Saichi] &fYou've been so helpful with the sheets..."
+      complete:
+        - "&7[Lady Saichi] &aA small gift from me."
+
+  daku_medal:
+    name: "&5Daku's Commendation"
+    description: "&7Talk to General Daku after ender stockpile."
+    npc: general_daku
+    requires-quests: [ender_stockpile]
+    objective:
+      type: TALK
+    rewards:
+      tickets: 30
+      stars: 1
+    dialogue:
+      start:
+        - "&7[General Daku] &fYour service to the tea supply is noted."
+      complete:
+        - "&7[General Daku] &aDismissed with honor."
+
+  arcade_highscore:
+    name: "&bArcade High Score"
+    description: "&7Big trade: &e30 Iron Nuggets&7 to Arcade Player."
+    npc: arcade_player
+    requires-quests: [arcade_nuggets]
+    objective:
+      type: COLLECT_ITEM
+      item: iron-nugget
+      amount: 30
+    rewards:
+      tickets: 100
+      stars: 2
+    dialogue:
+      start:
+        - "&7[Arcade Player] &fHigh score challenge: &e30 nuggets&f."
+      progress:
+        - "&7[Arcade Player] &cNot enough."
+      complete:
+        - "&7[Arcade Player] &aNEW HIGH SCORE! Ticket dump incoming."
+
+  cable_runner:
+    name: "&fCable Runner"
+    description: "&7Deliver &e40 Wool Cables&7 (repeatable)."
+    npc: receptionist
+    requires-quests: [wool_cables_quest]
+    repeatable: true
+    objective:
+      type: COLLECT_ITEM
+      item: wool-cable
+      amount: 40
+    rewards:
+      tickets: 90
+    dialogue:
+      start:
+        - "&7[Receptionist] &fMaintenance needs &e40 Spare Wool Cables&f."
+      progress:
+        - "&7[Receptionist] &cStill short."
+      complete:
+        - "&7[Receptionist] &aCables delivered!"
+
+  star_milestone_50:
+    name: "&6Fifty Stars"
+    description: "&7Reach &e50 Hotel Stars&7."
+    npc: receptionist
+    requires-quests: [star_milestone_25]
+    requires-stars: 50
+    objective:
+      type: TALK
+    rewards:
+      tickets: 500
+      stars: 5
+      boon: 0.10
+    dialogue:
+      start:
+        - "&7[Receptionist] &fFifty stars... legendary."
+      complete:
+        - "&7[Receptionist] &aA major permanent ticket boon is yours."
+
+  sandman_gift:
+    name: "&5Dreamer's Gift"
+    description: "&7Final talk with the Sandman after meeting him."
+    npc: sandman
+    requires-quests: [meet_sandman]
+    objective:
+      type: TALK
+    rewards:
+      tickets: 500
+      stars: 10
+      boon: 0.15
+    dialogue:
+      start:
+        - "&7[Sandman] &fBefore you go..."
+      complete:
+        - "&7[Sandman] &aTake this gift. The dream continues in every game."
+
+  wallet_whale:
+    name: "&6Wallet Whale"
+    description: "&7Talk to Receptionist after max-tier wallet path."
+    npc: receptionist
+    requires-quests: [receptionist_staff_wallet]
+    objective:
+      type: TALK
+    rewards:
+      tickets: 100
+      stars: 2
+    dialogue:
+      start:
+        - "&7[Receptionist] &fThat wallet can hold a fortune."
+      complete:
+        - "&7[Receptionist] &aA tip for our biggest guest."
+
+  machine_jackpot_hunter:
+    name: "&dJackpot Hunter"
+    description: "&7Invest &e250 tickets&7 into the machine lifestyle."
+    npc: ticket_machine
+    requires-quests: [machine_regular]
+    objective:
+      type: PAY_TICKETS
+      tickets: 250
+    rewards:
+      tickets: 50
+      stars: 2
+    dialogue:
+      start:
+        - "&7[Ticket Machine] &f*clack* Prove dedication: &e250 tickets&f."
+      progress:
+        - "&7[Ticket Machine] &cMore coins."
+      complete:
+        - "&7[Ticket Machine] &a*JACKPOT PROTOCOL ARMED*"
+
+  final_checkout:
+    name: "&5Final Checkout"
+    description: "&7After Sandman's gift – one last receptionist farewell."
+    npc: receptionist
+    requires-quests: [sandman_gift]
+    objective:
+      type: TALK
+    rewards:
+      tickets: 100
+      stars: 5
+    dialogue:
+      start:
+        - "&7[Receptionist] &fChecking out of the dream?"
+      complete:
+        - "&7[Receptionist] &aYou're always welcome back at the Slumber Hotel."
+
+  laundry_intro:
+    name: "&fMeet the Laundry Guy"
+    description: "&7Find Laundry Guy near the laundry area."
+    npc: laundry_guy
+    requires-quests: [ready_for_nap]
+    objective:
+      type: TALK
+    rewards:
+      tickets: 10
+      stars: 1
+    dialogue:
+      start:
+        - "&7[Laundry Guy] &fSheets everywhere... bring me bed sheets when you can."
+      complete:
+        - "&7[Laundry Guy] &aI'll be here."
+
+  laundry_quota:
+    name: "&fLaundry Manager's Quota"
+    description: "&7Deliver &e16 Bed Sheets&7 to Laundry Guy (repeatable)."
+    npc: laundry_guy
+    requires-quests: [laundry_intro]
+    repeatable: true
+    objective:
+      type: COLLECT_ITEM
+      item: bed-sheet
+      amount: 16
+    rewards:
+      tickets: 150
+    dialogue:
+      start:
+        - "&7[Laundry Guy] &fQuota: &e16 Bed Sheets&f."
+      progress:
+        - "&7[Laundry Guy] &cStill short on sheets."
+      complete:
+        - "&7[Laundry Guy] &aQuota met. Here's 150 tickets."
+
+  laundry_gal_intro:
+    name: "&fLaundry Gal"
+    description: "&7Meet Laundry Gal."
+    npc: laundry_gal
+    requires-quests: [laundry_intro]
+    objective:
+      type: TALK
+    rewards:
+      tickets: 10
+    dialogue:
+      start:
+        - "&7[Laundry Gal] &fI handle the overflow. Same deal – sheets help."
+      complete:
+        - "&7[Laundry Gal] &aSee you around."
+
+  chef_bucky_intro:
+    name: "&6Chef Bucky"
+    description: "&7Meet Chef Bucky in the hotel."
+    npc: chef_bucky
+    requires-quests: [ready_for_nap]
+    objective:
+      type: TALK
+    rewards:
+      tickets: 15
+      stars: 1
+    dialogue:
+      start:
+        - "&7[Chef Bucky] &fKitchen's chaos. Bring gold bars later – leftover gold from games."
+      complete:
+        - "&7[Chef Bucky] &aDon't burn the soup."
+
+  chef_gold_bars:
+    name: "&6Gold Bar Delivery"
+    description: "&7Deliver &e25 Gold Bars&7 to Chef Bucky."
+    npc: chef_bucky
+    requires-quests: [chef_bucky_intro]
+    objective:
+      type: COLLECT_ITEM
+      item: gold-bar
+      amount: 25
+    rewards:
+      tickets: 120
+      stars: 2
+    dialogue:
+      start:
+        - "&7[Chef Bucky] &fI need &e25 Gold Bars&f – finish games with gold left over."
+      progress:
+        - "&7[Chef Bucky] &cNot enough bars."
+      complete:
+        - "&7[Chef Bucky] &aPerfect for the vault soup!"
+
+  don_espresso_intro:
+    name: "&6Don Espresso"
+    description: "&7Meet Don Espresso."
+    npc: don_espresso
+    requires-quests: [ready_for_nap]
+    objective:
+      type: TALK
+    rewards:
+      tickets: 15
+      stars: 1
+    dialogue:
+      start:
+        - "&7[Don Espresso] &fEspresso runs on gold. Bring gold bars."
+      complete:
+        - "&7[Don Espresso] &aCapisce."
+
+  don_gold:
+    name: "&6Feed Don Espresso"
+    description: "&7Deliver &e25 Gold Bars&7 to Don Espresso."
+    npc: don_espresso
+    requires-quests: [don_espresso_intro]
+    objective:
+      type: COLLECT_ITEM
+      item: gold-bar
+      amount: 25
+    rewards:
+      tickets: 100
+      stars: 2
+    dialogue:
+      start:
+        - "&7[Don Espresso] &f&e25 Gold Bars&f. Don't be cheap."
+      progress:
+        - "&7[Don Espresso] &cMore gold."
+      complete:
+        - "&7[Don Espresso] &aNow that's a proper espresso fund."
+
+  spaceman_intro:
+    name: "&bSpaceman"
+    description: "&7Unlock Space Door, meet the Spaceman."
+    npc: spaceman
+    requires-quests: [ready_for_nap]
+    objective:
+      type: TALK
+    rewards:
+      tickets: 20
+      stars: 1
+    dialogue:
+      start:
+        - "&7[Spaceman] &fThe moon needs proof of victory. Bring Proof of Success."
+      complete:
+        - "&7[Spaceman] &aSee you on the dark side."
+
+  spaceman_stars:
+    name: "&bThe Moon"
+    description: "&7Deliver &e10 Proof of Success&7 to Spaceman."
+    npc: spaceman
+    requires-quests: [spaceman_intro]
+    objective:
+      type: COLLECT_ITEM
+      item: proof-of-success
+      amount: 10
+    rewards:
+      tickets: 150
+      stars: 3
+    dialogue:
+      start:
+        - "&7[Spaceman] &f&e10 Proof of Success&f (wins)."
+      progress:
+        - "&7[Spaceman] &cNot enough victories."
+      complete:
+        - "&7[Spaceman] &aOne small step for ticket-kind."
+
+  jets_intro:
+    name: "&cJets McTurbo"
+    description: "&7Unlock Garage Door, meet Jets McTurbo."
+    npc: jets_mcturbo
+    requires-quests: [john_hammer_deliver]
+    objective:
+      type: TALK
+    rewards:
+      tickets: 20
+      stars: 1
+    dialogue:
+      start:
+        - "&7[Jets McTurbo] &fNeed speed. Tokens of Ferocity fuel the engine."
+      complete:
+        - "&7[Jets McTurbo] &aVroom."
+
+  jets_tokens:
+    name: "&cTurbo Tokens"
+    description: "&7Deliver &e30 Tokens of Ferocity&7 to Jets."
+    npc: jets_mcturbo
+    requires-quests: [jets_intro]
+    objective:
+      type: COLLECT_ITEM
+      item: token-of-ferocity
+      amount: 30
+    rewards:
+      tickets: 140
+      stars: 2
+    dialogue:
+      start:
+        - "&7[Jets McTurbo] &f&e30 Tokens of Ferocity&f. Floor it."
+      progress:
+        - "&7[Jets McTurbo] &cMore fuel!"
+      complete:
+        - "&7[Jets McTurbo] &aWe're racing!"
+
+  inspector_intro:
+    name: "&9Inspector Mya Sterling"
+    description: "&7Meet the Inspector (Door for Hire)."
+    npc: inspector_mya
+    requires-quests: [ready_for_nap]
+    objective:
+      type: TALK
+    rewards:
+      tickets: 20
+      stars: 1
+    dialogue:
+      start:
+        - "&7[Inspector Mya] &fI need evidence. Clues later – for now, introduce yourself."
+      complete:
+        - "&7[Inspector Mya] &aStay sharp."
+
+  inspector_evidence:
+    name: "&9Case Files"
+    description: "&7Deliver &e10 Wool Cables&7 and pay &e200 tickets&7 as case funding."
+    npc: inspector_mya
+    requires-quests: [inspector_intro]
+    objective:
+      type: PAY_TICKETS
+      tickets: 200
+    rewards:
+      tickets: 50
+      stars: 2
+    dialogue:
+      start:
+        - "&7[Inspector Mya] &fCase funding: &e200 tickets&f."
+      progress:
+        - "&7[Inspector Mya] &cBudget insufficient."
+      complete:
+        - "&7[Inspector Mya] &aCase opened. Good work, detective."
+
+  master_meyer_intro:
+    name: "&cMaster Meyer"
+    description: "&7Meet Master Meyer for combat tributes."
+    npc: master_meyer
+    requires-quests: [king_ferocity]
+    objective:
+      type: TALK
+    rewards:
+      tickets: 10
+      stars: 1
+    dialogue:
+      start:
+        - "&7[Master Meyer] &fTokens of Ferocity. Bring them often."
+      complete:
+        - "&7[Master Meyer] &aBegin."
+
+  master_meyer_tokens:
+    name: "&cMeyer's Tribute"
+    description: "&7Deliver &e15 Tokens of Ferocity&7 (repeatable)."
+    npc: master_meyer
+    requires-quests: [master_meyer_intro]
+    repeatable: true
+    objective:
+      type: COLLECT_ITEM
+      item: token-of-ferocity
+      amount: 15
+    rewards:
+      tickets: 50
+    dialogue:
+      start:
+        - "&7[Master Meyer] &f&e15 Tokens&f."
+      progress:
+        - "&7[Master Meyer] &cMore."
+      complete:
+        - "&7[Master Meyer] &aAccepted."
+
+  combat_sally_intro:
+    name: "&cCombat Artist Sally"
+    description: "&7Meet Combat Artist Sally."
+    npc: combat_sally
+    requires-quests: [ratman_intro]
+    objective:
+      type: TALK
+    rewards:
+      tickets: 15
+      stars: 1
+    dialogue:
+      start:
+        - "&7[Sally] &fArt is pain. Tokens are proof."
+      complete:
+        - "&7[Sally] &aShow me your work."
+
+  combat_sally_tokens:
+    name: "&cSally's Canvas"
+    description: "&7Deliver &e25 Tokens of Ferocity&7 to Sally (repeatable)."
+    npc: combat_sally
+    requires-quests: [combat_sally_intro]
+    repeatable: true
+    objective:
+      type: COLLECT_ITEM
+      item: token-of-ferocity
+      amount: 25
+    rewards:
+      tickets: 60
+    dialogue:
+      start:
+        - "&7[Sally] &f&e25 Tokens&f for the next piece."
+      progress:
+        - "&7[Sally] &cUnfinished."
+      complete:
+        - "&7[Sally] &aMasterpiece."
+
+  lester_intro:
+    name: "&eLester Brodie"
+    description: "&7Meet Lester in the basement area."
+    npc: lester_brodie
+    requires-quests: [ceo_wins]
+    objective:
+      type: TALK
+    rewards:
+      tickets: 15
+      stars: 1
+    dialogue:
+      start:
+        - "&7[Lester] &fNether stars... or Proof of Success. Wins pay."
+      complete:
+        - "&7[Lester] &aBring proof."
+
+  lester_proof:
+    name: "&eLester's Deal"
+    description: "&7Deliver &e4 Proof of Success&7 to Lester (repeatable)."
+    npc: lester_brodie
+    requires-quests: [lester_intro]
+    repeatable: true
+    objective:
+      type: COLLECT_ITEM
+      item: proof-of-success
+      amount: 4
+    rewards:
+      tickets: 300
+    dialogue:
+      start:
+        - "&7[Lester] &f&e4 Proof of Success&f = 300 tickets."
+      progress:
+        - "&7[Lester] &cNeed more wins."
+      complete:
+        - "&7[Lester] &aDeal."
+
+  oasis_void:
+    name: "&bOasis Void Souls"
+    description: "&7Deliver &e16 Void Husks&7 to Oasis Spirit (repeatable)."
+    npc: oasis_spirit
+    requires-quests: [oasis_water_quest]
+    repeatable: true
+    objective:
+      type: COLLECT_ITEM
+      item: void-husk
+      amount: 16
+    rewards:
+      tickets: 150
+    dialogue:
+      start:
+        - "&7[Oasis Spirit] &fVoid Husks... &e16&f of them."
+      progress:
+        - "&7[Oasis Spirit] &cThe void is not yet pleased."
+      complete:
+        - "&7[Oasis Spirit] &aSouls accepted."
+
+# ============================================================
+#  HOTEL STARS
+# ============================================================
+stars:
+  # Display name
+  name: "Hotel Star"
+  name-plural: "Hotel Stars"
+
+# ============================================================
+#  TICKET MACHINE (lobby NPC or /slumber machine)
+# ============================================================
+ticket-machine:
+  enabled: true
+  cost: 10
+  # Weighted rewards – higher weight = more common
+  rewards:
+    nothing:
+      name: "&7Nothing..."
+      weight: 40
+      tickets: 0
+    small_refund:
+      name: "&aSmall refund"
+      weight: 25
+      tickets: 5
+    medium_refund:
+      name: "&aTicket burst"
+      weight: 15
+      tickets: 15
+    jackpot:
+      name: "&6&lJACKPOT"
+      weight: 3
+      tickets: 50
+      stars: 1
+    pillow:
+      name: "&fComfy Pillow"
+      weight: 8
+      item: comfy-pillow
+      item-amount: 1
+    silver:
+      name: "&eSilver Coin"
+      weight: 9
+      item: silver-coin
+      item-amount: 1
+    # Hook cosmetics plugin later, e.g.:
+    # cosmetic_glyph:
+    #   name: "&bRandom Glyph"
+    #   weight: 2
+    #   commands:
+    #     - "bwcosmetics give %player% glyph random"
+
+# ============================================================
+#  ROOM STORY QUESTS (Phase 2 – expand over time)
+#  Unlock door first, then talk to room NPC
+# ============================================================
+# Additional NPCs for room quests – set citizens-id after creating
+# npcs already defined above; extend as needed:
+#   king_flut, blacksmith, oasis_spirit, arcade_player, ...
+
+
+# ============================================================
+#  COSMETICS SHOP HOOKS
+#  Commands run as console. Adjust to your cosmetics plugin.
+#  BedWars1058-Cosmetics / Mher examples – change as needed.
+# ============================================================
+cosmetics-shop:
+  enabled: true
+  # currency: tickets spent via /slumber cosmetics or future GUI
+  entries:
+    glyph_example:
+      name: "&bExample Glyph"
+      cost: 200
+      commands:
+        - "bw cosmetics give %player% glyph example"
+    kill_effect_example:
+      name: "&cExample Kill Effect"
+      cost: 350
+      commands:
+        - "bw cosmetics give %player% killeffect example"
+
+
+# ============================================================
+#  LOBBY JOURNAL ITEM (given on join if lobby)
+# ============================================================
+lobby-journal:
+  enabled: true
+  slot: 7
+  material: BED
+  name: "&dSlumber Quest Log"
+  lore:
+    - "&7Right-click to open your quest log"
+    - "&8Slumber Hotel"
+
+
+# ============================================================
+#  SOUNDS (1.8 names)
+# ============================================================
+sounds:
+  ticket-earn: ORB_PICKUP
+  quest-complete: LEVEL_UP
+  door-unlock: ANVIL_LAND
+  machine-roll: CLICK
+
+
+# ============================================================
+#  ACTION BAR (lobby tickets – needs Spigot API)
+# ============================================================
+action-bar:
+  enabled: true
+  format: "&dTickets: &e%tickets%&7/&e%cap%"
+
+# ============================================================
+#  SPARK PLUG LOCATION (right-click this block)
+#  Set to the black tarp / prop coords on your hotel map
+# ============================================================
+spark-plug:
+  enabled: true
+  world: "world"
+  x: 25
+  y: 70
+  z: -14
+
+
+# ============================================================
+#  STAR MILESTONES → permanent ticket boons
+# ============================================================
+star-milestones:
+  5: 0.05
+  10: 0.05
+  15: 0.05
+  20: 0.10
+  30: 0.10
+  40: 0.15
+  50: 0.20
+
+# NPC visibility: guests hidden until listed quests done
+# (doorman_dave / receptionist / ticket_machine always visible)
+npc-visibility:
+  enabled: true
